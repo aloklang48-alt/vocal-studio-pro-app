@@ -1,1 +1,104 @@
-index.html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Vocal Studio Pro</title>
+<style>
+body {
+  margin: 0;
+  padding: 20px;
+  background: #10111b;
+  color: white;
+  font-family: Arial, sans-serif;
+  text-align: center;
+}
+.studio {
+  max-width: 400px;
+  margin: 25px auto;
+  padding: 22px;
+  background: #202235;
+  border-radius: 18px;
+}
+h1 { color: #b794ff; }
+button {
+  padding: 14px;
+  margin: 8px 3px;
+  border: 0;
+  border-radius: 10px;
+  font-size: 16px;
+  color: white;
+  background: #7948ff;
+}
+#status { color: #a9f5c8; }
+audio { width: 100%; margin-top: 20px; }
+a { color: #c7b3ff; }
+</style>
+</head>
+<body>
+<h1>🎙️ Vocal Studio Pro</h1>
+<p>Your Personal Recording Studio</p>
+<div class="studio">
+  <h2>Recording Studio</h2>
+  <p id="status">Ready to record</p>
+  <button id="start">🔴 Start Recording</button>
+  <button id="stop" disabled>⏹ Stop</button>
+  <audio id="playback" controls></audio>
+  <p><a id="download" hidden>Download Recording</a></p>
+</div>
+<script>
+let recorder;
+let chunks = [];
+
+const status = document.getElementById("status");
+const start = document.getElementById("start");
+const stop = document.getElementById("stop");
+const playback = document.getElementById("playback");
+const download = document.getElementById("download");
+
+start.onclick = async () => {
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({
+      audio: true
+    });
+    chunks = [];
+    recorder = new MediaRecorder(stream);
+
+    recorder.ondataavailable = event => {
+      if (event.data.size > 0) chunks.push(event.data);
+    };
+
+    recorder.onstop = () => {
+      const blob = new Blob(chunks, {
+        type: recorder.mimeType
+      });
+      const url = URL.createObjectURL(blob);
+      playback.src = url;
+      download.href = url;
+      download.download = "vocal-recording.webm";
+      download.hidden = false;
+      download.textContent = "⬇ Download Recording";
+      stream.getTracks().forEach(track => track.stop());
+      status.textContent = "Recording saved! Play or download below.";
+    };
+
+    recorder.start();
+    status.textContent = "🔴 Recording in progress...";
+    start.disabled = true;
+    stop.disabled = false;
+  } catch (error) {
+    status.textContent =
+      "Microphone unavailable. Open this app in a supported browser using HTTPS and allow microphone access.";
+  }
+};
+
+stop.onclick = () => {
+  if (recorder && recorder.state === "recording") {
+    recorder.stop();
+    start.disabled = false;
+    stop.disabled = true;
+  }
+};
+</script>
+</body>
+</html>
